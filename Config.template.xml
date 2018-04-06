@@ -1,0 +1,8 @@
+<configuration>
+    <backup id="backup">
+        <fileSystemObject source="Example" dest="c:\Backup\Example"/>
+    </backup>
+    <programsInstall id="programsInstall">
+        <program executablePath="" args=""/>
+    </programsInstall>
+</configuration>
