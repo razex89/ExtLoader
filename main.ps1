@@ -1,12 +1,14 @@
 New-Variable -Name LogFilePath -Value "c:\windows\temp\LogFileM.txt" -Scope "Global"
-
+New-Variable -Name ProcessTimeout -Value 1200000
 ### TESTED ON WINDOWS 10 AND 7 ONLY ###
+#TODO: if already installed.
+#Remove ExtLoader.
 
 function Main () {
     <#
     .SYNOPSIS
 
-    Runs program features.
+    Runs program features. 
 
     .DESCRIPTION
 
@@ -18,21 +20,21 @@ function Main () {
     #>
 
     # backup folder, and install programs.
-    CopyFolder source dest
-    InstallPrograms(ConfigFilePath)
+    #CopyFolder -SourceFolder source  -DestinationFolder dest;
+    InstallPrograms("C:\ExtLoader\Config.template.xml");
 
     # additional wanted computer settings.
-    ChnageBackgroundRandomized(FolderPath)
-    StopWindowsAutomaticUpdates
-
-
+    ChangeBackgroundRandomized("c:\ExtLoader\Backgrounds");
+    StopWindowsAutomaticUpdates;
+    SetWindowsPowerSettingsTimeout(0);
+    Invoke-Item -Path $LogFilePath;
 
 }
 
 function CopyFolder() {
     <#
     .SYNOPSIS
-    copies folder from source to destination
+    copies folder from source to destination recursively.
     #>
     [CmdletBinding()]
     Param(
@@ -45,8 +47,7 @@ function CopyFolder() {
         $DestinationFolder
     )
 
-    Copy-Item -Force -Path $SourceFolder -Destination $DestinationFolder
-
+    Copy-Item -Force -Recurse -Path $SourceFolder -Destination $DestinationFolder
 }
 
 function InstallPrograms () {
@@ -65,30 +66,44 @@ function InstallPrograms () {
         [string]
         $ConfigFilePath
     )
-
-    function GetInstallationDictionary () {
-        <#
-        .SYNOPSIS
-        create from the config file the installation dictionary (that is combined of file-path and command-arugments)
-        #>
-        [CmdletBinding()]
-        Param(
-            [Parameter(Mandatory = $True)]
-            [string]
-            $ConfigFilePath
-        )
-
-        $InstallationConfig = [xml](Get-Content $ConfigFilePath).programsInstall
+    
+    Write-Log -Level "INFO" -Message "programs installation begins." -LogFile $LogFilePath
+    $InstallationConfig = ([xml](Get-Content $ConfigFilePath)).configuration.programsInstall
         
-        ForEach-Object -InputObject ($InstallationConfig.ChildNodes) {
-            [System.Diagnostics.Process]::Start($_.executablePath, $_.args)
+        foreach ($node in $InstallationConfig.program) {
+            # create a process, which redirects stdout and stderr.
+            Write-Log -Level "DEBUG" -Message "installing: $($node.name) with : $($node.executablePath) $($node.args)" -LogFile $LogFilePath
+            if ([System.IO.File]::Exists($node.executablePath) -eq $false) {
+                Write-Log -Level "ERROR" -Message "FILE NOT FOUND $($node.executablePath)"
+            }
+            else {
+                $processInfo = New-Object System.Diagnostics.processStartInfo
+                $processInfo.FileName = $node.executablePath
+                $processInfo.Arguments = $node.args
+                $processInfo.RedirectStandardOutput = $True
+                $processInfo.RedirectStandardError = $True
+                $processInfo.UseShellExecute = $false
+                $process = New-Object System.Diagnostics.Process
+                $process.StartInfo = $processInfo
+                $process.start() | Out-Null
+                $HasExited = $process.WaitForExit($ProcessTimeout)
+                $stdout = $process.StandardOutput.ReadToEnd()
+                $stderror = $process.StandardError.ReadToEnd()
+                $exitCode = $process.ExitCode
+
+                Write-Log -Level "DEBUG" -Message "STDOUT: $($stdout)" -LogFile $LogFilePath
+                Write-Log -Level "DEBUG" -Message "STDERR: $($stderror)" -LogFile $LogFilePath
+                if ($HasExited -eq $false){
+                    Write-Log -Level "ERROR" -Message "program $($node.name) didn't complete the run after $($ProcessTimeout) miliseconds.."
+                }
+                elseif ($exitCode -ne 0){
+                    Write-Log -Level "ERROR" -Message "program $($node.name) exited with error code $($exitCode)" -LogFile $LogFilePath
+                }
+            }
+            
         }
-
-    }
-
-    $InstllationDictionary = GetInstallationDictionary(ConfigFilePath)
-
-
+    
+    Write-Log -Level "INFO" -Message "programs installation ended." -LogFile $LogFilePath
 }
 
 function ChangeBackgroundRandomized () {
@@ -105,7 +120,8 @@ function ChangeBackgroundRandomized () {
     )
 
     $BackgroundFilePath = Get-Random -InputObject (Get-ChildItem -File $FolderPath | ForEach-Object {$_.FullName})
-    [System.Diagnostics.Process]::Start("SetWallpaper.exe", $BackgroundFilePath)
+    [System.Diagnostics.Process]::Start("C:\ExtLoader\SetWallpaper.exe", $BackgroundFilePath) | Out-Null
+    Write-Log -Level "INFO" -Message "Changed wallpaper to $($BackgroundFilePath)" -LogFile $LogFilePath
 
 }
 
@@ -125,7 +141,7 @@ function StopWindowsAutomaticUpdates () {
             # changing service start mode to disabled (so in case of restart he will not try to update again).
             $result = $service.ChangeStartMode("Disabled").ReturnValue
             if ($result) {
-                Write-Log -Level "ERROR" -Message "Failed to disable the 'wuauserv' service. The return value was $result." -LogFile $LogFilePath
+                Write-Log -Level "ERROR" -Message "Failed to disable the 'wuauserv' service. The return value was $($result)." -LogFile $LogFilePath
             }
             else {Write-Log -Level "INFO" -Message "Success to disable the 'wuauserv' service" -LogFile $LogFilePath}
 			
@@ -133,7 +149,7 @@ function StopWindowsAutomaticUpdates () {
                 # stops the service.
                 $result = $service.StopService().ReturnValue
                 if ($result) {
-                    Write-Log -Level "ERROR" -Message "Failed to stop the 'wuauserv' service. The return value was $result." -LogFile $LogFilePath
+                    Write-Log -Level "ERROR" -Message "Failed to stop the 'wuauserv' service. The return value was $($result)." -LogFile $LogFilePath
                 }
                 else {Write-Log -Level "INFO" -Message "Success to stop the 'wuauserv' service" -LogFile $LogFilePath}
             }
@@ -144,7 +160,7 @@ function StopWindowsAutomaticUpdates () {
     
 }
 
-function SetWindowsScreenTime () {
+function SetWindowsPowerSettingsTimeout () {
     <#
     .SYNOPSIS
     sets the time of screen for windows until he goes to sleep (0 for never sleep.), in minutes.
@@ -157,10 +173,29 @@ function SetWindowsScreenTime () {
     )
 
     $PowerCfg = "C:\Windows\system32\powercfg.exe"
-    [System.Diagnostics.Process]::Start($PowerCfg, "-change -monitor-timeout-ac $ScreenTime")
-    [System.Diagnostics.Process]::Start($PowerCfg, "-change -monitor-timeout-dc $ScreenTime")
-    [System.Diagnostics.Process]::Start($PowerCfg, "-change -standby-timeout-ac $ScreenTime") # TODO: check
-    [System.Diagnostics.Process]::Start($PowerCfg, "-change -standby-timeout-dc $ScreenTime") # TODO: check.
+    $ProcessMonitorTimeoutAC = [System.Diagnostics.Process]::Start($PowerCfg, "-change -monitor-timeout-ac $ScreenTime")
+    $ProcessMonitorTimeoutDC = [System.Diagnostics.Process]::Start($PowerCfg, "-change -monitor-timeout-dc $ScreenTime")
+    $ProcessStandbayTimeoutAC = [System.Diagnostics.Process]::Start($PowerCfg, "-change -standby-timeout-ac $ScreenTime") # TODO: check
+    $ProcessStandbayTimeoutDC = [System.Diagnostics.Process]::Start($PowerCfg, "-change -standby-timeout-dc $ScreenTime") # TODO: check.
+
+    #TODO: check all this.
+    $ProcessDiskTimeoutAC = [System.Diagnostics.Process]::Start($PowerCfg, "-change -disk-timeout-ac $ScreenTime") 
+    $ProcessDiskTimeoutAC = [System.Diagnostics.Process]::Start($PowerCfg, "-change -disk-timeout-dc $ScreenTime")
+    $ProcessHibernateTimeoutAC = [System.Diagnostics.Process]::Start($PowerCfg, "-change -hibernate-timeout-ac $ScreenTime")
+    $ProcessHibernateTimeoutDC = [System.Diagnostics.Process]::Start($PowerCfg, "-change -hibernate-timeout-dc $ScreenTime")
+
+
+    $Processes = @($ProcessMonitorTimeoutAC, $ProcessMonitorTimeoutDC, $ProcessStandbayTimeoutAC, $ProcessStandbayTimeoutDC, $ProcessDiskTimeoutAC, $ProcessDiskTimeoutDC, $ProcessHibernateTimeoutAC, $ProcessHibernateTimeoutDC)
+    $ProcessCounter = 0
+    foreach ($Process in $Processes) {
+        $Process.WaitForExit()
+        if ($Process.ExitCode -ne 0) {
+            Write-Log -Level "ERROR" -Message "process $($ProcessCounter) didn't work exactly as planned, $($Process.ExitCode) exit code."
+        }
+        $ProcessCounter++
+    }
+    
+    Write-Log -Level "INFO" -Message "FINISHED LOADING "
 
 }
 
@@ -178,6 +213,7 @@ Function Write-Log {
         $Level = "INFO",
 
         [Parameter(Mandatory = $True)]
+        [AllowEmptyString()]
         [string]
         $Message,
 
@@ -191,9 +227,9 @@ Function Write-Log {
     If ($LogFile) {
         Add-Content $LogFile -Value $Line
     }
-    Else {
+    # Else { #TODO: return
         Write-Output $Line
-    }
+    # }
 }
 
 
