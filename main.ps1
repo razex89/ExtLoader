@@ -21,7 +21,7 @@ function Main () {
 
     # backup folder, and install programs.
     #CopyFolder -SourceFolder source  -DestinationFolder dest;
-    InstallPrograms("C:\ExtLoader\Config.template.xml");
+    InstallPorgramUnattended("C:\ExtLoader\config_tests.xml");
 
     # additional wanted computer settings.
     ChangeBackgroundRandomized("c:\ExtLoader\Backgrounds");
@@ -29,6 +29,53 @@ function Main () {
     SetWindowsPowerSettingsTimeout(0);
     Invoke-Item -Path $LogFilePath;
 
+}
+
+function RunProgram () {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $True)]
+        [string]
+        $ProgramPath,
+
+        [Parameter(Mandatory = $True)]
+        [string]
+        $ProgramArgs,
+
+        [Parameter(Mandatory = $True)]
+        [string]
+        $ProgramName
+    )
+
+    Write-Log -Level "DEBUG" -Message "installing $($ProgramName) : $($ProgramPath) with: $($ProgramArgs)" -LogFile $LogFilePath
+            if ([System.IO.File]::Exists($ProgramPath) -eq $false) {
+                Write-Log -Level "ERROR" -Message "FILE NOT FOUND $($ProgramPath)"
+            }
+            else {
+                $processInfo = New-Object System.Diagnostics.processStartInfo
+                $processInfo.FileName = $ProgramPath
+                $processInfo.Arguments = $ProgramArgs
+                $processInfo.RedirectStandardOutput = $True
+                $processInfo.RedirectStandardError = $True
+                $processInfo.UseShellExecute = $false
+                $process = New-Object System.Diagnostics.Process
+                $process.StartInfo = $processInfo
+                $process.start() | Out-Null
+                $HasExited = $process.WaitForExit($ProcessTimeout)
+                $stdout = $process.StandardOutput.ReadToEnd()
+                $stderror = $process.StandardError.ReadToEnd()
+                $exitCode = $process.ExitCode
+
+                Write-Log -Level "DEBUG" -Message "STDOUT: $($stdout)" -LogFile $LogFilePath
+                Write-Log -Level "DEBUG" -Message "STDERR: $($stderror)" -LogFile $LogFilePath
+                if ($HasExited -eq $false){
+                    Write-Log -Level "ERROR" -Message "program $($ProgramName) didn't complete the run after $($ProcessTimeout) miliseconds.."
+                }
+                elseif ($exitCode -ne 0){
+                    Write-Log -Level "ERROR" -Message "program $($ProgramName) exited with error code $($exitCode)" -LogFile $LogFilePath
+                }
+            }
+    return $exitCode -eq 0
 }
 
 function CopyFolder() {
@@ -50,7 +97,7 @@ function CopyFolder() {
     Copy-Item -Force -Recurse -Path $SourceFolder -Destination $DestinationFolder
 }
 
-function InstallPrograms () {
+function InstallPorgramUnattended () {
     <#
     .SYNOPSIS
     install programs unattendedly from the configuration file given
@@ -72,34 +119,8 @@ function InstallPrograms () {
         
         foreach ($node in $InstallationConfig.program) {
             # create a process, which redirects stdout and stderr.
-            Write-Log -Level "DEBUG" -Message "installing: $($node.name) with : $($node.executablePath) $($node.args)" -LogFile $LogFilePath
-            if ([System.IO.File]::Exists($node.executablePath) -eq $false) {
-                Write-Log -Level "ERROR" -Message "FILE NOT FOUND $($node.executablePath)"
-            }
-            else {
-                $processInfo = New-Object System.Diagnostics.processStartInfo
-                $processInfo.FileName = $node.executablePath
-                $processInfo.Arguments = $node.args
-                $processInfo.RedirectStandardOutput = $True
-                $processInfo.RedirectStandardError = $True
-                $processInfo.UseShellExecute = $false
-                $process = New-Object System.Diagnostics.Process
-                $process.StartInfo = $processInfo
-                $process.start() | Out-Null
-                $HasExited = $process.WaitForExit($ProcessTimeout)
-                $stdout = $process.StandardOutput.ReadToEnd()
-                $stderror = $process.StandardError.ReadToEnd()
-                $exitCode = $process.ExitCode
-
-                Write-Log -Level "DEBUG" -Message "STDOUT: $($stdout)" -LogFile $LogFilePath
-                Write-Log -Level "DEBUG" -Message "STDERR: $($stderror)" -LogFile $LogFilePath
-                if ($HasExited -eq $false){
-                    Write-Log -Level "ERROR" -Message "program $($node.name) didn't complete the run after $($ProcessTimeout) miliseconds.."
-                }
-                elseif ($exitCode -ne 0){
-                    Write-Log -Level "ERROR" -Message "program $($node.name) exited with error code $($exitCode)" -LogFile $LogFilePath
-                }
-            }
+            Write-Log -Level "DEBUG" -Message "$($node.executablePath), $($node.args), $($node.name)" -LogFile $LogFilePath
+            RunProgram -ProgramArgs $node.args -ProgramName $node.name -ProgramPath $node.executablePath
             
         }
     

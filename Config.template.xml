@@ -14,6 +14,6 @@
         <program name="paint.net.4.0.19.install" executablePath="C:\Backups\ProgramsPool\X64\paint.net.4.0.19.install.exe" args="/auto"/>
         <program name="python2.7.14" executablePath="C:\Backups\ProgramsPool\X64\python-2.7.14.msi" args="/qn /norestart"/>
         <program name="winrar" executablePath="C:\Backups\ProgramsPool\X64\winrar-x64-550.exe" args="/S"/>
-        <!-- ADD VCD ! -->
+        <!-- not adding VCD because of the problem having installing it unattendly. -->
     </programsInstall>
 </configuration>

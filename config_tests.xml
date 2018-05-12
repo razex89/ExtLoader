@@ -1,0 +1,8 @@
+<configuration>
+    <backup id="backup">
+        <fileSystemObject source="Example" dest="c:\Backup\Example"/>
+    </backup>
+    <programsInstall id="programsInstall">
+        <program name="python2.7.14" executablePath="C:\Backups\ProgramsPool\X64\python-2.7.14.msi" args="/qn /norestart"/>
+    </programsInstall>
+</configuration>
