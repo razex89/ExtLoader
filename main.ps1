@@ -18,10 +18,9 @@ function Main () {
     .NOTES
     none
     #>
-
     # backup folder, and install programs.
     #CopyFolder -SourceFolder source  -DestinationFolder dest;
-    InstallPorgramUnattended("C:\ExtLoader\config_tests.xml");
+    InstallPorgramUnattended("C:\ExtLoader\Config.template.xml");
 
     # additional wanted computer settings.
     ChangeBackgroundRandomized("c:\ExtLoader\Backgrounds");
@@ -44,7 +43,11 @@ function RunProgram () {
 
         [Parameter(Mandatory = $True)]
         [string]
-        $ProgramName
+        $ProgramName,
+        
+        [Parameter(Mandatory = $True)]
+        [string]
+        $ShouldUseShellExecute
     )
 
     Write-Log -Level "DEBUG" -Message "installing $($ProgramName) : $($ProgramPath) with: $($ProgramArgs)" -LogFile $LogFilePath
@@ -55,15 +58,20 @@ function RunProgram () {
                 $processInfo = New-Object System.Diagnostics.processStartInfo
                 $processInfo.FileName = $ProgramPath
                 $processInfo.Arguments = $ProgramArgs
-                $processInfo.RedirectStandardOutput = $True
-                $processInfo.RedirectStandardError = $True
-                $processInfo.UseShellExecute = $false
+                if ($ShouldUseShellExecute -eq "0")
+                {
+                    $processInfo.RedirectStandardOutput = $True
+                    $processInfo.RedirectStandardError = $True
+                    $processInfo.UseShellExecute = $false
+                }
                 $process = New-Object System.Diagnostics.Process
                 $process.StartInfo = $processInfo
                 $process.start() | Out-Null
                 $HasExited = $process.WaitForExit($ProcessTimeout)
-                $stdout = $process.StandardOutput.ReadToEnd()
-                $stderror = $process.StandardError.ReadToEnd()
+                if ($ShouldUseShellExecute -eq "0") {
+                    $stdout = $process.StandardOutput.ReadToEnd()
+                    $stderror = $process.StandardError.ReadToEnd()
+                }
                 $exitCode = $process.ExitCode
 
                 Write-Log -Level "DEBUG" -Message "STDOUT: $($stdout)" -LogFile $LogFilePath
@@ -120,7 +128,7 @@ function InstallPorgramUnattended () {
         foreach ($node in $InstallationConfig.program) {
             # create a process, which redirects stdout and stderr.
             Write-Log -Level "DEBUG" -Message "$($node.executablePath), $($node.args), $($node.name)" -LogFile $LogFilePath
-            RunProgram -ProgramArgs $node.args -ProgramName $node.name -ProgramPath $node.executablePath
+            RunProgram -ProgramArgs $node.args -ProgramName $node.name -ProgramPath $node.executablePath -ShouldUseShellExecute $node.shell
             
         }
     
@@ -131,7 +139,6 @@ function ChangeBackgroundRandomized () {
     <#
     .SYNOPSIS
     get a folder's path that has pictures in it, choose one randomly, and then sets its as the background.
-    # TODO: MD5 of SetWallpaper.
     #>
     [CmdletBinding()]
     Param(
@@ -201,7 +208,7 @@ function SetWindowsPowerSettingsTimeout () {
 
     #TODO: check all this.
     $ProcessDiskTimeoutAC = [System.Diagnostics.Process]::Start($PowerCfg, "-change -disk-timeout-ac $ScreenTime") 
-    $ProcessDiskTimeoutAC = [System.Diagnostics.Process]::Start($PowerCfg, "-change -disk-timeout-dc $ScreenTime")
+    $ProcessDiskTimeoutDC = [System.Diagnostics.Process]::Start($PowerCfg, "-change -disk-timeout-dc $ScreenTime")
     $ProcessHibernateTimeoutAC = [System.Diagnostics.Process]::Start($PowerCfg, "-change -hibernate-timeout-ac $ScreenTime")
     $ProcessHibernateTimeoutDC = [System.Diagnostics.Process]::Start($PowerCfg, "-change -hibernate-timeout-dc $ScreenTime")
 

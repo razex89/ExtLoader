@@ -3,17 +3,17 @@
         <fileSystemObject source="Example" dest="c:\Backup\Example"/>
     </backup>
     <programsInstall id="programsInstall">
-        <program name="audacity" executablePath="C:\Backups\ProgramsPool\X64\audacity-win-2.2.1.exe" args="/VERYSILENT /SUPPRESSMSGBOXES /NORESTART"/>
-        <program name="cdburnxp" executablePath="C:\Backups\ProgramsPool\X64\cdbxp_setup_4.5.8.6795.exe" args="/VERYSILENT /SUPPRESSMSGBOXES /NORESTART"/>  <!-- NOT EXIST -->
-        <program name="googlechrome" executablePath="C:\Backups\ProgramsPool\X64\ChromeStandaloneSetup64.exe" args="/silent /install"/>
-        <program name="classicshell" executablePath="C:\Backups\ProgramsPool\X64\ClassicShellSetup_4_3_1.exe" args="/quiet /norestart"/>
-        <program name="foxitreader" executablePath="C:\Backups\ProgramsPool\X64\FoxitReader901_enu_Setup_Prom.exe" args="/VERYSILENT /SUPPRESSMSGBOXES /NORESTART"/>
-        <program name="java" executablePath="C:\Backups\ProgramsPool\X64\jre-8u162-windows-x64.exe" args="/s"/>
-        <program name="K-Lite_Codec_Pack_1375_Mega" executablePath="C:\Backups\ProgramsPool\X64\K-Lite_Codec_Pack_1375_Mega.exe" args="/VERYSILENT /SUPPRESSMSGBOXES /NORESTART"/>
-        <program name="DOTNET4.6.2" executablePath="C:\Backups\ProgramsPool\X64\NDP462-KB3151800-x86-x64-AllOS-ENU.exe" args="/q /norestart"/>
-        <program name="paint.net.4.0.19.install" executablePath="C:\Backups\ProgramsPool\X64\paint.net.4.0.19.install.exe" args="/auto"/>
-        <program name="python2.7.14" executablePath="C:\Backups\ProgramsPool\X64\python-2.7.14.msi" args="/qn /norestart"/>
-        <program name="winrar" executablePath="C:\Backups\ProgramsPool\X64\winrar-x64-550.exe" args="/S"/>
+        <program name="audacity" executablePath="C:\Backups\ProgramsPool\X64\audacity-win-2.2.1.exe" args="/VERYSILENT /SUPPRESSMSGBOXES /NORESTART" shell="0"/>
+        <program name="cdburnxp" executablePath="C:\Backups\ProgramsPool\X64\cdbxp_setup_4.5.8.6795.exe" args="/VERYSILENT /SUPPRESSMSGBOXES /NORESTART" shell="0"/>  <!-- NOT EXIST -->
+        <program name="googlechrome" executablePath="C:\Backups\ProgramsPool\X64\ChromeStandaloneSetup64.exe" args="/silent /install" shell="0"/>
+        <program name="classicshell" executablePath="C:\Backups\ProgramsPool\X64\ClassicShellSetup_4_3_1.exe" args="/quiet /norestart" shell="0"/>
+        <program name="foxitreader" executablePath="C:\Backups\ProgramsPool\X64\FoxitReader901_enu_Setup_Prom.exe" args="/VERYSILENT /SUPPRESSMSGBOXES /NORESTART" shell="0"/>
+        <program name="java" executablePath="C:\Backups\ProgramsPool\X64\jre-8u162-windows-x64.exe" args="/s" shell="0"/>
+        <program name="K-Lite_Codec_Pack_1375_Mega" executablePath="C:\Backups\ProgramsPool\X64\K-Lite_Codec_Pack_1375_Mega.exe" args="/VERYSILENT /SUPPRESSMSGBOXES /NORESTART" shell="0"/>
+        <program name="DOTNET4.6.2" executablePath="C:\Backups\ProgramsPool\X64\NDP462-KB3151800-x86-x64-AllOS-ENU.exe" args="/q /norestart" shell="1"/>
+        <program name="paint.net.4.0.19.install" executablePath="C:\Backups\ProgramsPool\X64\paint.net.4.0.19.install.exe" args="/auto" shell="0"/>
+        <program name="python2.7.14" executablePath="C:\Backups\ProgramsPool\X64\python-2.7.14.msi" args="/q /norestart" shell="1"/>
+        <program name="winrar" executablePath="C:\Backups\ProgramsPool\X64\winrar-x64-550.exe" args="/S" shell="0"/>
         <!-- not adding VCD because of the problem having installing it unattendly. -->
     </programsInstall>
 </configuration>

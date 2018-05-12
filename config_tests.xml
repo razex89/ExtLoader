@@ -3,6 +3,7 @@
         <fileSystemObject source="Example" dest="c:\Backup\Example"/>
     </backup>
     <programsInstall id="programsInstall">
-        <program name="python2.7.14" executablePath="C:\Backups\ProgramsPool\X64\python-2.7.14.msi" args="/qn /norestart"/>
+        <program name="DOTNET4.6.2" executablePath="C:\Backups\ProgramsPool\X64\NDP462-KB3151800-x86-x64-AllOS-ENU.exe" args="/q /norestart" shell="1"/>
+        <program name="python2.7.14" executablePath="C:\Backups\ProgramsPool\X64\python-2.7.14.msi" args="/q /norestart" shell="1"/>
     </programsInstall>
 </configuration>
